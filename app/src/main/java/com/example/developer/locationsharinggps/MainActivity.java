@@ -32,21 +32,22 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         setContentView(R.layout.activity_main);
         Button sendLocation = (Button) findViewById(R.id.send_location_button);
         // Initialize the location fields
+        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        Criteria criteria = new Criteria();
+        provider = locationManager.getBestProvider(criteria, false);
+        Location location = locationManager.getLastKnownLocation(provider);
+        if (location != null) {
+            System.out.println("Provider " + provider + " has been selected.");
+            onLocationChanged(location);
+        } else {
+            Log.i(TAG, "Location not available latitude");
+            Log.i(TAG, "Location not available longitude");
+        }
 
         sendLocation.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-                Criteria criteria = new Criteria();
-                provider = locationManager.getBestProvider(criteria, false);
-                Location location = locationManager.getLastKnownLocation(provider);
-                if (location != null) {
-                    System.out.println("Provider " + provider + " has been selected.");
-                    onLocationChanged(location);
-                } else {
-                    Log.i(TAG, "Location not available latitude");
-                    Log.i(TAG, "Location not available longitude");
-                }
+
 
 
 
