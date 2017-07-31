@@ -13,12 +13,14 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.os.PersistableBundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.Toast;
 
 /**
@@ -31,7 +33,11 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
     public String lat, lon;
     boolean mBound = false;
     Button startStopServiceBtn;
+    EditText phoneNumberEt;
+    public static String phoneNumber;
+    Intent intent;
     boolean startStopServiceIsPressed;
+    private SessionManager sessionManager;
 
 
     @Override
@@ -39,20 +45,33 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         startStopServiceBtn = (Button) findViewById(R.id.start_tracking_button);
+        phoneNumberEt = (EditText)findViewById(R.id.phone_number_et);
         startStopServiceBtn.setOnClickListener(this);
+        sessionManager = new SessionManager(MainActivity.this);
     }
 
     @Override
     protected void onStart() {
         super.onStart();
         // Bind to LocalService
+        Log.d(TAG, "onStart");
         if (isMyServiceRunning(LocalService.class)){
-            Log.d(TAG, "service is running ");
+            if((sessionManager.getPhoneNumber()!= null | sessionManager.getPhoneNumber().equals(""))){
+                phoneNumberEt.setText(sessionManager.getPhoneNumber());
+                phoneNumber = sessionManager.getPhoneNumber();
+                //mService.setPhoneNumber(sessionManager.getPhoneNumber());
+            }
+            Log.d(TAG, "service is running called onStart   ");
             startStopServiceBtn.setText("Stop Tracking");
             Intent intent = new Intent(this, LocalService.class);
-            bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
+            bindService(intent, mConnection, 0);
 
-        }/*else{
+        }
+        if(!(sessionManager.getPhoneNumber()!=null | sessionManager.getPhoneNumber().isEmpty())){
+            phoneNumberEt.setText(sessionManager.getPhoneNumber());
+        }
+
+        /*else{
             Log.d(TAG, "Bind to LocalService and service is being created");
             Intent intent = new Intent(this, LocalService.class);
             startService(intent);
@@ -62,16 +81,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
 
     }
 
-    @Override
-    protected void onStop() {
-        super.onStop();
-        // Unbind from the service
-        if (mBound) {
-            unbindService(mConnection);
-            mBound = false;
-            Log.d(TAG, "unbindService ...");
-        }
-    }
+
 
     /** Defines callbacks for service binding, passed to bindService() */
     private ServiceConnection mConnection = new ServiceConnection() {
@@ -127,9 +137,40 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
     }
 
     @Override
+    protected void onRestart() {
+        super.onRestart();
+        Log.d(TAG, "onRestart");
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState, PersistableBundle outPersistentState) {
+        super.onSaveInstanceState(outState, outPersistentState);
+        Log.d(TAG, "onSaveInstanceState");
+    }
+
+    @Override
     protected void onResume() {
         super.onResume();
+        Log.d(TAG, "onResume");
 
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        Log.d(TAG, "onResume");
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        // Unbind from the service
+        Log.d(TAG, "onStop");
+        if (mBound) {
+            unbindService(mConnection);
+            mBound = false;
+            Log.d(TAG, "unbindService ...");
+        }
     }
 
     @Override
@@ -143,18 +184,38 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
                         Intent intent = new Intent(this, LocalService.class);
                         bindService(intent, mConnection, Context.BIND_AUTO_CREATE);*/
                     if (isMyServiceRunning(LocalService.class)){
-                        Log.d(TAG, "service is running ");
-                        stopService(new Intent(getApplicationContext(), LocalService.class));
+                        Log.d(TAG, "service is running user clicked button ");
+                        //Intent intent = new Intent(this, LocalService.class);
+                        //stopService(new Intent(getApplicationContext(), LocalService.class));
+                        intent = new Intent(this, LocalService.class);
+                        stopService(intent);
                         startStopServiceBtn.setText("Start Tracking");
                     }
 
 
                 else {
-                        startStopServiceBtn.setText("Stop Tracking");
-                        Log.d(TAG, "Bind to LocalService and service is being created");
-                        Intent intent = new Intent(this, LocalService.class);
-                        startService(intent);
-                        bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
+                        if(isPhoneNumberEmpty()){
+                            Context context = getApplicationContext();
+                            CharSequence text = "Please complete 10 digits phone number";
+                            int duration = Toast.LENGTH_SHORT;
+
+                            Toast toast = Toast.makeText(context, text, duration);
+                            toast.show();
+
+
+                        }else{
+                            sessionManager.setPhoneNumber(phoneNumberEt.getText().toString());
+                            phoneNumber = sessionManager.getPhoneNumber();
+                            Log.d(TAG, "phone:"+sessionManager.getPhoneNumber());
+                            startStopServiceBtn.setText("Stop Tracking");
+                            Log.d(TAG, "Bind to LocalService and service is being created");
+                            intent = new Intent(this, LocalService.class);
+                            startService(intent);
+                            bindService(intent, mConnection, 0);
+                            //mService.setPhoneNumber(sessionManager.getPhoneNumber());
+
+                        }
+
                     }
                 }
                 break;
@@ -163,4 +224,13 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
         }
 
     }
+    boolean isPhoneNumberEmpty(){
+        if(phoneNumberEt.getText().toString().length() == 0 | phoneNumberEt.getText().toString().length() <10){
+            return true;
+        }else{
+            return false;
+        }
+    }
+
+
 }
