@@ -1,17 +1,23 @@
 package com.example.developer.locationsharinggps.app;
 
+import android.Manifest;
+import android.app.Activity;
 import android.app.ActivityManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.PersistableBundle;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
@@ -26,9 +32,11 @@ import com.example.developer.locationsharinggps.R;
  */
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
+    private static final int MY_PERMISSIONS_REQUEST_READ_CONTACTS = 0;
     public String TAG = "./MainActivity";
     LocalService mService;
     public String lat, lon;
+    Activity activity;
     boolean mBound = false;
     Button startStopServiceBtn;
     EditText phoneNumberEt;
@@ -48,25 +56,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         startStopServiceBtn.setOnClickListener(this);
         this.context = getApplicationContext();
         sharedPref = context.getSharedPreferences(PREF_NAME, PRIVATE_MODE);
+
     }
 
-    @Override
-    protected void onStart() {
-        super.onStart();
-        // Bind to LocalService
-        Log.d(TAG, "onStart");
-        if(!(sharedPref.getString("phoneActivity", "").isEmpty())){
-            phoneNumberEt.setText(sharedPref.getString("phoneActivity", ""));
 
-        }
-        if (isMyServiceRunning(LocalService.class)){
-            Log.d(TAG, "service is running called onStart   ");
-            startStopServiceBtn.setText("Stop Tracking");
-            Intent intent = new Intent(this, LocalService.class);
-            bindService(intent, mConnection, 0);
-
-        }
-    }
 
     /** Defines callbacks for service binding, passed to bindService() */
     private ServiceConnection mConnection = new ServiceConnection() {
@@ -93,6 +86,23 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         return false;
     }
 
+    @Override
+    protected void onStart() {
+        super.onStart();
+        // Bind to LocalService
+        Log.d(TAG, "onStart");
+        if(!(sharedPref.getString("phoneActivity", "").isEmpty())){
+            phoneNumberEt.setText(sharedPref.getString("phoneActivity", ""));
+
+        }
+        if (isMyServiceRunning(LocalService.class)){
+            Log.d(TAG, "service is running called onStart   ");
+            startStopServiceBtn.setText("Stop Tracking");
+            Intent intent = new Intent(this, LocalService.class);
+            bindService(intent, mConnection, 0);
+
+        }
+    }
     @Override
     protected void onRestart() {
         super.onRestart();
@@ -137,24 +147,53 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     @Override
     public void onClick(View v) {
-        switch (v.getId()){
-            case R.id.start_tracking_button:
-                {
-                    if (isMyServiceRunning(LocalService.class)){
+        switch (v.getId()) {
+
+
+
+                case R.id.start_tracking_button: {
+                    if (ActivityCompat.checkSelfPermission(this,
+                            Manifest.permission.READ_CONTACTS)
+                            != PackageManager.PERMISSION_GRANTED) {
+
+                        // Should we show an explanation?
+                        if (ActivityCompat.shouldShowRequestPermissionRationale(MainActivity.this,
+                                Manifest.permission.READ_CONTACTS)) {
+                            Log.d(TAG, "PERMISIONS NEEDED");
+
+                            // Show an explanation to the user *asynchronously* -- don't block
+                            // this thread waiting for the user's response! After the user
+                            // sees the explanation, try again to request the permission.
+
+                        } else {
+
+                            // No explanation needed, we can request the permission.
+
+                            ActivityCompat.requestPermissions(MainActivity.this,
+                                    new String[]{Manifest.permission.READ_CONTACTS},
+                                    0);
+
+                            // MY_PERMISSIONS_REQUEST_READ_CONTACTS is an
+                            // app-defined int constant. The callback method gets the
+                            // result of the request.
+                        }
+                    }
+
+                    /*
+                    if (isMyServiceRunning(LocalService.class)) {
                         Log.d(TAG, "service is running user clicked button ");
                         intent = new Intent(this, LocalService.class);
                         stopService(intent);
                         startStopServiceBtn.setText("Start Tracking");
-                    }
-                else {
-                        if(isPhoneNumberEmpty()){
-                            context= getApplicationContext();
+                    } else {
+                        if (isPhoneNumberEmpty()) {
+                            context = getApplicationContext();
                             CharSequence text = "Please complete 10 digits phone number";
                             int duration = Toast.LENGTH_SHORT;
 
                             Toast toast = Toast.makeText(context, text, duration);
                             toast.show();
-                        }else{
+                        } else {
                             editor = sharedPref.edit();
                             editor.putString("phoneActivity", phoneNumberEt.getText().toString());
                             editor.commit();
@@ -164,12 +203,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                             startService(intent);
                             bindService(intent, mConnection, 0);
                         }
-                    }
+                    }*/
                 }
                 break;
-            default:
-                break;
-        }
+                default:
+                    break;
+            }
+
 
     }
 
@@ -180,6 +220,33 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             return false;
         }
     }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode,  String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        switch (requestCode) {
+            case MY_PERMISSIONS_REQUEST_READ_CONTACTS: {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    Log.d(TAG, "permision granted location");
+                }
+
+                    // permission was granted, yay! Do the
+                    // contacts-related task you need to do.
+
+                else{
+                   Log.d(TAG, "permision denied  location");
+                }
+
+                // permission denied, boo! Disable the
+                    // functionality that depends on this permission.
+                }
+                return;
+            }
+
+    }
+
 
 
 }

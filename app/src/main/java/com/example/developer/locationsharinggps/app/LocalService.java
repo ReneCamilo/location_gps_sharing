@@ -1,6 +1,7 @@
 package com.example.developer.locationsharinggps.app;
 
 import android.Manifest;
+import android.app.Activity;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
@@ -56,6 +57,8 @@ public class LocalService extends Service implements LocationListener {
     private final String METHOD_NAME = "ReportLocation";
     private static String celcius ="100";
     private static String fahren;
+    Activity activity;
+    Context context ;
 
     public LocalService() {
         this.coordinate = new Coordinate("","","");
@@ -102,6 +105,7 @@ public class LocalService extends Service implements LocationListener {
     public void onCreate() {
         preferences =  getApplicationContext().getSharedPreferences(PREF_NAME, PRIVATE_MODE);
         coordinate.setPhoneNumber(preferences.getString(PHONE_NUMBER, ""));
+        this.activity = activity;
         isServiceRunning = true;
         // The service is being created
         Log.d(TAG, "onCreate");
@@ -173,7 +177,9 @@ public class LocalService extends Service implements LocationListener {
         } else {
             Log.i(TAG, "Location not available latitude and longitude");
         }
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            Log.d(TAG, "permission denied");
             // TODO: Consider calling
             //    ActivityCompat#requestPermissions
             // here to request the missing permissions, and then overriding
@@ -181,6 +187,14 @@ public class LocalService extends Service implements LocationListener {
             //                                          int[] grantResults)
             // to handle the case where the user grants the permission. See the documentation
             // for ActivityCompat#requestPermissions for more details.
+            return;
+
+        }else {
+            // No explanation needed, we can request the permission.
+
+            ActivityCompat.requestPermissions(activity,
+                    new String[]{Manifest.permission.READ_CONTACTS},
+                    0);
 
         }
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
@@ -191,6 +205,7 @@ public class LocalService extends Service implements LocationListener {
             //                                          int[] grantResults)
             // to handle the case where the user grants the permission. See the documentation
             // for ActivityCompat#requestPermissions for more details.
+            return;
 
         }
         locationManager.requestLocationUpdates(provider, 400, 1, this);
